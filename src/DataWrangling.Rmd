@@ -1,0 +1,101 @@
+---
+title: "DataWrangling"
+date: "2024-03-14"
+output:
+  rmdformats::downcute:
+    self_contained: true
+    default_style: "dark"
+    downcute_theme: "default"
+---
+
+Library import
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(magrittr)
+library(tidyr)
+library(dplyr)
+```
+
+# Lesson part
+
+## Group Info
+
+Study group:
+
+-   **Igor Estrop** s197686
+-   **Filip Dąbkowski** s197712
+-   **Maksymilian Balicki** s198117
+
+</br>
+
+_If there a problem with displaying the data tables, we are really sorry we had no idea which button to flip. Everything is the same as for the example .Rmd but it does not want to work._
+
+```{r message=TRUE}
+set.seed(31415)
+```
+
+```{r test, message=TRUE}
+student_data <- data.frame(
+  student_id = 1:50,
+  name = paste0("Student", 1:50),
+  midterm1 = sample(60:100, 50, replace = TRUE),
+  midterm2 = sample(60:100, 50, replace = TRUE),
+  final = sample(60:100, 50, replace = TRUE)
+)
+```
+
+```{R}
+std_long = student_data %>% gather("test", "mark", midterm1, midterm2, final)
+```
+
+# Group Homework
+
+Generate a poorly formatted csv document with data from students exams
+
+```{r echo=TRUE}
+std_messy <- data.frame(
+  student_id = 1:50, # Students ID should range from 1 to 50
+  name_age = c("John_21", "Alice_20", "Bob_22", "Emily_23", "Michael_22"), # Those generic names will be used for students names and ages
+  exam_scores = c("midterm1_80,midterm2_85,final_75", "midterm1_75,midterm2_78,final_80", "midterm1_82,midterm2_80,final_85", "midterm1_88,midterm2_90,final_92", "midterm1_85,midterm2_86,final_88") # exam and score are mushed up together 
+)
+```
+
+## 1. Separate the data into apropariete columns
+
+Use separate to split columns by characters that are in between data that is needed
+
+```{r echo=TRUE}
+std_separated = std_messy %>%
+  separate(col = "name_age", into=c("name", "age"), sep="_") %>% # separate column $name and $age by character "_"
+  separate(col = "exam_scores", into = c("mid1_", "midterm1", "mid2_", "midterm2", "final_", "final"), sep="[_|,]") %>% # separate the second column into appropriate cols by any character matching Regexp
+  pivot_longer(cols = c(midterm1, midterm2, final), names_to = "exam", values_to = "mark") %>% # change the data format into Long, use column names as values for row
+  select(c(-mid1_, -mid2_, -final_)) # remove unnecessary columns
+```
+
+## 2. Extend the data with more values
+
+Use complete to fill in missing values, make sure there exist every posiible combination of Student&Age also making sure students attend exams but did not get graded
+
+```{r echo=TRUE}
+students_full = std_separated %>%
+  complete(name, age, exam, fill = list()) # for permutation on data use columns $name $age to get more values and to make sure students have exam fields filled in also use $exam in permutation
+```
+
+## 3. Convert the data back into Wide format
+
+Use pivot_wider to change values from col A to be used as column names with values from col B
+
+```{r echo=TRUE}
+student_wide_again = students_full %>% 
+  pivot_wider(names_from=exam, values_from=mark) # convert the DF to have every exam as separate column
+```
+
+## 4. Join columns name and age
+
+Use unite to combine column \$name \$age to create a pseudo unique identifier for student
+
+```{r echo=TRUE}
+std_final = student_wide_again %>% 
+  unite(student, name, age, sep="_") # join values of two columns into the third columns, values are joined with specified separatoar in between
+```

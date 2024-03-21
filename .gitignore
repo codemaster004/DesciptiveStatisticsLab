@@ -1,0 +1,5 @@
+# Ignore R local private data files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
