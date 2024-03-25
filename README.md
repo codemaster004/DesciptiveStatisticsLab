@@ -56,3 +56,5 @@ After you are done with your tasks go to `git` tab press `commit` button.
 
 A window should appear asking about **saved** files that you want to commit and to provide a description of what you did.
 
+When you are done click the `commit` button and after that `push` button.
+
