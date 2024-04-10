@@ -11,10 +11,20 @@ output:
 knit: reprex::reprex_render
 ---
 
+# THE CODE WAS DONE BY THE WHOLE GROUP
+
+## Group Info
+
+Study group:
+
+-   **Igor Estrop** s197686
+-   **Filip Dąbkowski** s197712
+-   **Maksymilian Balicki** s198117
+
 ## Sample data
 
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 # Load necessary libraries
 library(tidyverse)
 library(dlookr)
@@ -24,7 +34,7 @@ library(naniar)
 library(ggplot2)
 
 # Set seed for reproducibility
-set.seed(123)
+set.seed(007)
 
 # Generate sample data
 n <- 1000  # Number of observations
@@ -114,7 +124,7 @@ sample_dirty_dataset <- data.frame(age, workclass, education, education_num, mar
 head(sample_dirty_dataset)
 ```
 
-##Identify which variables contain errors, inconsistencies, or missing values.Step 
+## Identify which variables contain errors, inconsistencies, or missing values.Step 
 
 ```{r}
 str(sample_dirty_dataset) 
@@ -124,16 +134,20 @@ str(sample_dirty_dataset)
 summary(sample_dirty_dataset)
 ```
 
-##Identify and correct any erroneous values in the dataset. Step 3
+## Identify and correct any erroneous values in the dataset. Step 3
 
 ```{r}
-# Correct errors in the dataset
+# Correct errors in the Dataset
 # 1. Invalid ages ("InvalidAge")
 sample_dirty_dataset$age <- ifelse(sample_dirty_dataset$age == "InvalidAge", NA, sample_dirty_dataset$age)
 
+# cheange to numerical
+sample_dirty_dataset$age <- as.numeric(as.character(sample_dirty_dataset$age))
+
+
 # 2. Negative capital gains or losses
-sample_dirty_dataset$capital_gain <- ifelse(sample_dirty_dataset$capital_gain < 0, 0, sample_dirty_dataset$capital_gain)
-sample_dirty_dataset$capital_loss <- ifelse(sample_dirty_dataset$capital_loss < 0, 0, sample_dirty_dataset$capital_loss)
+sample_dirty_dataset$capital_gain <- ifelse(sample_dirty_dataset$capital_gain <= 0, NA, sample_dirty_dataset$capital_gain)
+sample_dirty_dataset$capital_loss <- ifelse(sample_dirty_dataset$capital_loss <= 0, NA, sample_dirty_dataset$capital_loss)
 
 # 3. Incorrectly spelled or invalid values in categorical variables
 sample_dirty_dataset$occupation <- ifelse(sample_dirty_dataset$occupation == "InvalidOccupation", NA, sample_dirty_dataset$occupation)
@@ -142,20 +156,68 @@ sample_dirty_dataset$education <- ifelse(sample_dirty_dataset$education == "Inva
 
 ```
 
-##Standardize inconsistent values within categorical variables. Step 4
+## Standardize inconsistent values within categorical variables. Step 4
 
 ```{r}
-# Load the dataset
+# Load the Dataset
 data <- sample_dirty_dataset
 
-# Detect errors and inconsistencies using dlookr
+# Detect errors and inconsistencies using dlookr library
 data_report <- diagnose(data)
 
 ```
 
-##Step 5
+
+For the first report
+```{r}
+sample_dirty_dataset %>%
+  diagnose_web_report(subtitle = "report1", output_dir = ".", output_file = "Diagn.html", theme = "blue")
+```
+
+## Step 5
 
 ```{r}
-# Recognize missingness patterns using naniar
+# Recognize missingness patterns using naniar library
  vis_miss(data)
+
+# When there are numerical missing values we can simply use meadian (not mean becouse every value in dataser is rounded to 0, simple mean would give us N.01234) out of the other data to populate missing cells
+sample_dirty_dataset$age[is.na(sample_dirty_dataset$age)] <- median(sample_dirty_dataset$age, na.rm = TRUE) # Age
+sample_dirty_dataset$capital_gain[is.na(sample_dirty_dataset$capital_gain)] <- median(sample_dirty_dataset$capital_gain, na.rm = TRUE) # Capital gain
+sample_dirty_dataset$capital_loss[is.na(sample_dirty_dataset$capital_loss)] <- median(sample_dirty_dataset$capital_loss, na.rm = TRUE) # Capital loss
+sample_dirty_dataset$hours_per_week[is.na(sample_dirty_dataset$hours_per_week)] <- median(sample_dirty_dataset$hours_per_week, na.rm = TRUE) # Capital loss
+
+# Now the rest being string values for simplicity lets just remove them
+sample_dirty_dataset <- na.omit(sample_dirty_dataset)
+
 ```
+
+
+```{r}
+
+sample_dirty_dataset %>%
+  eda_web_report(target = "capital_loss", subtitle = "capital_loss", output_dir = ".", output_file = "Report1_EDA.html", theme = "blue")
+
+# For example, assuming 'capital_loss' is the problematic column:
+sample_dirty_dataset$capital_loss <- as.numeric(sample_dirty_dataset$capital_loss)  # Convert to numeric if not already
+sample_dirty_dataset <- sample_dirty_dataset[is.finite(sample_dirty_dataset$capital_loss), ]  # Keep only rows with finite values
+
+# this does not work and it should, but it doesn't
+# sample_dirty_dataset %>%
+#   transformation_paged_report(target = "capital_loss", subtitle = "occupation", output_dir = ".", output_file = "Report1_trans.pdf", theme = "blue")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
