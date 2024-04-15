@@ -530,7 +530,26 @@ For extra credits:
 *Extra challenge 2.*: For movies and series, create rating charts from the various portals (Hidden Gem, IMDb, Rotten Tomatoes, Metacritic). Hint: it's a good idea to reshape the data to *long* format.
 
 ```{r challenge2}
+# Reshape the data to long format containing only the specified ratings
+ratings_long <- mydata %>%
+  select(Title, Hidden.Gem.Score, IMDb.Score, Rotten.Tomatoes.Score, Metacritic.Score) %>%
+  pivot_longer(cols = -Title,
+               names_to = "Portal",
+               values_to = "Rating") %>%
+  na.omit()  # Remove rows with missing ratings
 
+kable(ratings_long, col.names = c("Title", "Portal", "Rating")) %>%
+kable_classic(full_width = T, html_font = "Cambria") %>%
+kable_styling(bootstrap_options = "bordered")
+
+# Create rating charts for each portal
+ggplot(ratings_long, aes(x = Rating)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  facet_wrap(~ Portal, scales = "free_x") +
+  labs(title = "Rating Distribution from Various Portals",
+       x = "Rating",
+       y = "Count") +
+  theme_minimal()
 ```
 
 *Extra challenge 3.*: Which film studios produce the most and how has this changed over the years?
