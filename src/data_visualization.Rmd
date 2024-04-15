@@ -523,7 +523,36 @@ For extra credits:
 *Extra challenge 1.*: Create a chart showing actors starring in the most popular productions.
 
 ```{r challenge1}
+# Filter the data to include only productions available in more than 4 countries
+netflix_data <- mydata %>%
+  mutate(Num_Countries = str_count(Country.Availability, ",") + 1) %>%
+  select(Title, Num_Countries, Actors)
 
+popular_productions <- netflix_data %>%
+  filter(Num_Countries > 4) %>%
+  arrange(desc(Num_Countries))  # Arrange in decreasing order of number of countries
+
+# Extract the list of actors for these popular productions
+popular_actors <- popular_productions %>%
+  filter(Actors != "") %>%  # Exclude empty cells in the "Actors" variable
+  select(Actors) %>%
+  separate_rows(Actors, sep = ", ") %>%
+  filter(!is.na(Actors))
+
+# Count the occurrences of each actor and exclude NA values
+actor_counts <- popular_actors %>%
+  count(Actors) %>%
+  arrange(desc(n)) %>%
+  slice(1:20)
+
+# Create a bar plot to visualize the top actors
+ggplot(actor_counts, aes(x = reorder(Actors, n), y = n)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Top Actors Starring in Most Popular Productions",
+       x = "Actor",
+       y = "Number of Appearances") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_flip()  # Flipping coordinates for horizontal bars
 ```
 
 
