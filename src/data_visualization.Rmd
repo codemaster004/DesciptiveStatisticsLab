@@ -585,6 +585,32 @@ ggplot(ratings_long, aes(x = Rating)) +
 
 ```{r challenge3}
 
+studio_data <- mydata %>%
+  filter(!is.na(Production.House), Production.House != "") %>%
+  mutate(Year = as.integer(format(as.Date(Netflix.Release.Date, "%m/%d/%Y"), "%Y"))) %>%
+  drop_na(Year) %>%
+  group_by(Production.House, Year) %>%
+  summarise(Productions = n(), .groups = 'drop') %>%
+  arrange(Production.House, Year)
+
+top_studios <- studio_data %>%
+  group_by(Production.House) %>%
+  summarise(TotalProductions = sum(Productions), .groups = 'drop') %>%
+  top_n(10, TotalProductions) %>%
+  pull(Production.House)
+
+filtered_studio_data <- studio_data %>%
+  filter(Production.House %in% top_studios)
+
+ggplot(filtered_studio_data, aes(x = Year, y = Productions)) +
+  geom_col(fill = "dodgerblue") +  # Use a single color for all bars
+  facet_wrap(~ Production.House, scales = "free_y", ncol = 2) +
+  labs(title = "Annual Productions by Top Film Studios on Netflix",
+       x = "Year",
+       y = "Number of Productions") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.text.x = element_text(size = 8))
 ```
 
 
