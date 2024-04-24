@@ -464,8 +464,11 @@ inline_plot %>%
 # Calculate total yearly credit card expenditure
 CreditCard$total_expenditure <- CreditCard$expenditure * 12
 
+# Calculate total yearly income
+CreditCard$total_income <- CreditCard$income * 1000 * 12
+
 # Calculate ratio of total yearly credit card expenditure to yearly income
-CreditCard$ratio <- CreditCard$total_expenditure / CreditCard$income
+CreditCard$ratio <- CreditCard$total_expenditure / CreditCard$total_income
 
 # Group by credit risk (card) and calculate mean ratio
 ratio_by_card <- CreditCard %>%
@@ -482,12 +485,12 @@ From the boxplots, we observe that there are variations in yearly incomes, credi
 ```{r}
 # Descriptive analysis and visualization
 # Boxplot for yearly incomes by credit risk
-ggplot(CreditCard, aes(x = card, y = income)) +
+ggplot(CreditCard, aes(x = card, y = total_income)) +
   geom_boxplot(fill = "skyblue", color = "blue") +
   labs(x = "Credit Risk", y = "Yearly Income (in USD 10,000)", title = "Yearly Incomes by Credit Risk")
 
 # Boxplot for credit card expenditures by credit risk
-ggplot(CreditCard, aes(x = card, y = expenditure)) +
+ggplot(CreditCard, aes(x = card, y = total_expenditure)) +
   geom_boxplot(fill = "lightgreen", color = "darkgreen") +
   labs(x = "Credit Risk", y = "Credit Card Expenditure", title = "Credit Card Expenditures by Credit Risk")
 
@@ -508,20 +511,20 @@ ggplot(CreditCard, aes(x = card, y = ratio)) +
 # Descriptive statistics table for yearly incomes by credit risk
 yearly_income_summary <- CreditCard %>%
   group_by(card) %>%
-  summarise(mean_income = mean(income),
-            median_income = median(income),
-            sd_income = sd(income),
-            min_income = min(income),
-            max_income = max(income))
+  summarise(mean_income = mean(total_income),
+            median_income = median(total_income),
+            sd_income = sd(total_income),
+            min_income = min(total_income),
+            max_income = max(total_income))
 
 # Descriptive statistics table for credit card expenditures by credit risk
 expenditure_summary <- CreditCard %>%
   group_by(card) %>%
-  summarise(mean_expenditure = mean(expenditure),
-            median_expenditure = median(expenditure),
-            sd_expenditure = sd(expenditure),
-            min_expenditure = min(expenditure),
-            max_expenditure = max(expenditure))
+  summarise(mean_expenditure = mean(total_expenditure),
+            median_expenditure = median(total_expenditure),
+            sd_expenditure = sd(total_expenditure),
+            min_expenditure = min(total_expenditure),
+            max_expenditure = max(total_expenditure))
 
 # Descriptive statistics table for age by credit risk
 age_summary <- CreditCard %>%
