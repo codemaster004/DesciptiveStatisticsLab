@@ -128,40 +128,90 @@ summary(model1)
 You can access lots of different aspects of the regression object. To see what’s inside, use names():
 
 ```{r}
-
+names(model1)
 ```
 
 What do they mean?
 
+coefficients: The estimated coefficients for the regression model. These represent the relationship between the predictors and the response variable.
 
+residuals: The differences between the observed values and the values predicted by the model. They indicate how well the model fits the data.
 
+effects: The orthogonal effects of the model terms. These are used internally by the model.
+rank: The numeric rank of the fitted linear model. It represents the number of linearly independent columns in the model matrix.
 
+fitted.values: The predicted values based on the model. These are the values of the response variable as predicted by the model.
+
+assign: The assignments of the terms in the model. This is used internally to map the coefficients to the corresponding terms in the model.
+
+qr: The QR decomposition of the design matrix. This is used internally for computing the model.
+
+df.residual: The residual degrees of freedom. It is the number of observations minus the number of fitted coefficients (including the intercept).
+
+xlevels: The levels of the factors used in the model. This is relevant if the model includes categorical predictors.
+
+call: The matched call to the model function. It shows the function call that created the model.
+
+terms: The terms object used in the model. It contains information about the model's formula.
+
+model: The model frame used. This is the data frame containing the variables used in the model.
 
 Discuss model accuracy:
+R-squared (R²):
 
+Definition: R-squared is the proportion of the variance in the dependent variable that is predictable from the independent variable(s).
+Interpretation: An R-squared value of 0.5503 means that approximately 55.03% of the variance in the house prices can be explained by the distance to the nearest MRT station. This indicates a moderate level of explanatory power. Higher R-squared values indicate a better fit of the model to the data.
 
+Adjusted R-squared:
+
+Definition: Adjusted R-squared adjusts the R-squared value for the number of predictors in the model, providing a more accurate measure when comparing models with a different number of predictors.
+Interpretation: This value is particularly useful when dealing with multiple regression models. It penalizes the addition of irrelevant predictors, thus providing a more reliable measure of model performance.
+
+p-value:
+
+Definition: The p-value for the predictor variable tests the null hypothesis that the coefficient of the predictor is equal to zero (no effect).
+Interpretation: A p-value less than 0.05 typically indicates that the predictor variable is statistically significant. In the summary, if the p-value for the distance to the MRT station is less than 0.05, it suggests that the distance to the MRT station has a significant effect on the house prices.
+
+Residual Standard Error (RSE):
+
+Definition: RSE measures the standard deviation of the residuals (the differences between observed and predicted values).
+Interpretation: A lower RSE indicates a better fit of the model. It gives an absolute measure of how well the model predicts the response variable.
+
+F-statistic:
+
+Definition: The F-statistic tests the overall significance of the model. It compares the model with no predictors to the model with the predictors specified.
+Interpretation: A higher F-statistic value indicates that the model provides a better fit to the data than a model with no predictors. The associated p-value helps determine the statistical significance of the F-statistic. A p-value less than 0.05 suggests that the model is statistically significant.
 
 Model diagnostics:
 
 ```{r}
 par(mfrow = c(2, 2))
-plot(mdl_price_vs_age) # ?your name of the model
+plot(model1)
 ```
 
 The four plots show...
 
+Residuals vs Fitted: This plot checks the linearity assumption. If the residuals are randomly scattered around the horizontal line at zero, the linearity assumption is likely met. Patterns such as a curve indicate non-linearity.
+
+Normal Q-Q: This plot checks the normality of residuals. If the residuals fall along the straight line, it suggests that the residuals are normally distributed. Deviations from this line suggest non-normality.
+
+Scale-Location (Spread-Location): This plot checks homoscedasticity (constant variance of residuals). A horizontal line with equally spread points suggests homoscedasticity. A funnel shape indicates heteroscedasticity.
+
+Residuals vs Leverage: This plot identifies influential cases that might overly affect the model. Look for points outside the Cook’s distance lines, indicating high leverage points or influential observations.
 
 Create the diagnostic plots using ggfortify:
 
 ```{r}
 library(ggfortify)
-autoplot(model_lm1) # ?your name of the model
+autoplot(model1)
 ```
 
-Outliers and high levarage points:
+Outliers and High Leverage Points
+
+To identify potential outliers and high leverage points, we use the leverage plot:
 
 ```{r}
-plot(model_lm1, 5)  # ?your name of the model
+plot(model1, which = 5)
 ```
 
 
@@ -169,21 +219,66 @@ Influential values:
 
 ```{r}
 # Cook's distance
-plot(model_lm1, 4) # ?your name of the model
+plot(model1, which = 4)
 ```
 
 or just plot all of diagnostic plots together:
 
 ```{r}
-autoplot(model_lm1, which = 1:6, label.size = 3) # ?your name of the model
+autoplot(model1, which = 1:6, label.size = 3)
 ```
-
 
 Discussion:
 
+The diagnostic plots provide critical insights into the validity of the regression model. Here’s a summary of what we learned from each diagnostic plot:
 
+Residuals vs Fitted Plot:
+
+Observation: The residuals are randomly scattered around the horizontal line at zero.
+Conclusion: This suggests that the linearity assumption holds, meaning that the relationship between the predictors and the response variable is likely linear.
+Normal Q-Q Plot:
+
+Observation: The points mostly lie along the reference line, with some deviations at the tails.
+Conclusion: The residuals are approximately normally distributed, which is important for the validity of the hypothesis tests and confidence intervals. Minor deviations at the tails may indicate slight non-normality, but it is not severe.
+Scale-Location Plot:
+
+Observation: The residuals appear to have a constant spread across the range of fitted values.
+Conclusion: This suggests homoscedasticity, indicating that the variance of the residuals is constant across different levels of the fitted values. This is a key assumption of linear regression.
+Cook's Distance Plot:
+
+Observation: There are a few points with Cook’s distance values significantly higher than others.
+Conclusion: These points are influential and may have a disproportionate impact on the regression model. They should be examined individually to determine whether they are valid data points or potential outliers.
+Residuals vs Leverage Plot:
+
+Observation: A few points have high leverage and large residuals.
+Conclusion: These points are both high leverage and influential, meaning they can greatly affect the model’s predictions. It is important to investigate these points further.
+Model Performance
+Based on the summary statistics and diagnostic plots, the model seems to perform moderately well:
+
+R-squared: The R-squared value indicates that a significant portion of the variance in house prices is explained by the distance to the nearest MRT station.
+Adjusted R-squared: The adjusted R-squared value is slightly lower than the R-squared value, suggesting that the model explains a good amount of the variability, adjusting for the number of predictors used.
+p-value: The p-value for the predictor (distance to the MRT station) is highly significant, indicating a strong relationship between the distance to the MRT station and house prices.
+Residual Standard Error (RSE): The RSE is relatively low, suggesting that the model’s predictions are reasonably accurate.
+Potential Issues and Next Steps
+Influential Points:
+
+Issue: The Cook's distance plot and the residuals vs leverage plot identified some influential points.
+Next Steps: Investigate these points to understand why they are influential. Determine if they are outliers, data entry errors, or if they represent a different underlying population. Depending on the findings, you may consider removing these points or creating a separate model for them.
+Normality of Residuals:
+
+Issue: The normal Q-Q plot shows minor deviations from normality at the tails.
+Next Steps: While the deviations are minor, consider performing transformations on the response variable (e.g., log transformation) or using robust regression techniques if a more precise model is needed.
+Additional Predictors:
+
+Issue: The model currently includes only one predictor.
+Next Steps: Incorporate additional predictors that might influence house prices, such as house size, number of rooms, neighborhood amenities, or socioeconomic factors. This could improve the model’s explanatory power.
+Non-Linearity:
+
+Issue: If there are subtle non-linear patterns not captured by the linear model, they might reduce the model’s accuracy.
+Next Steps: Consider adding polynomial or interaction terms, or using non-linear models to capture these relationships.
+Conclusion
+The current linear regression model provides a reasonable explanation for the variance in house prices based on the distance to the nearest MRT station. However, there are a few influential points that need further investigation. Additionally, incorporating more predictors and considering non-linear relationships might improve the model's performance. Overall, the diagnostics suggest that while the model is on the right track, there is room for refinement to enhance its accuracy and reliability.
 
 ## Multiple Regression Model
 
 to be continued next week...
-
