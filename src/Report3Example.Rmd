@@ -1,0 +1,392 @@
+---
+title: 'Descriptive Statistics'
+subtitle: 'Univariate Statistics'
+date: "`r Sys.Date()`"
+author: "Your Name"
+output:
+  html_document: 
+    theme: cerulean
+    highlight: textmate
+    fontsize: 8pt
+    toc: yes
+    code_download: yes
+    toc_float:
+      collapsed: no
+    df_print: default
+    toc_depth: 5
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup1, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(qwraps2_markup = "markdown")
+library(qwraps2)
+library(arsenal)
+library(e1071)
+library(haven)
+library(papeR)
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+library(summarytools)
+library(classInt)
+library(pastecs)
+library(reporttools)
+library(desctable)
+library(psych)
+library(frequency)
+library(ggpubr)
+library(ggforce)
+library(ggdist)
+library(gghalves)
+library(gtsummary)
+library(AER)
+download.file("https://github.com/kflisikowski/ds/blob/master/data_apartments.csv?raw=true", destfile ="mieszkania.csv",mode="wb")
+apartments <- read.csv("mieszkania.csv",sep=";",dec=",")
+```
+
+## Data
+
+In our example this week, we are going to use the fake data - about real
+estates in Wroclaw - prices by districts, size of apartments and many
+more.
+
+### Preprocessing
+
+As you can see, not all formats of our variables are adapted. We need to
+prepare appropriate formats of our variables according to their
+measurement scale and future application.
+
+```{r wrangling, include=TRUE}
+apartments$district<-as.factor(apartments$district)
+apartments$building_type<-as.factor(apartments$building_type)
+apartments$rooms<-factor(apartments$rooms,ordered=TRUE)
+attach(apartments)
+apartments$price_PLN<-as.numeric(apartments$price_PLN)
+apartments$price_EUR<-as.numeric(apartments$price_EUR)
+```
+
+## Frequency Tables
+
+In the first step of our analysis, we will group our data into a simple
+frequency table.
+
+First, let's look at the distribution of housing prices in our sample
+and verify tabular validity using the TAI measure:
+
+```{r table, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+etykiety<-c("350-450 kPLN","450-550 kPLN","550-650 kPLN","650-750 kPLN","750-850 kPLN","850-950 kPLN","950-1050 kPLN","1050-1150 kPLN","1150-1250 kPLN","1250-1350 kPLN")
+limits<-cut(apartments$price_PLN,seq(350000,1350000,by=100000),labels=etykiety)
+tabela1<-freq(limits,type="html")
+```
+
+Ok, it looks quite ugly, so let's wrap it up using the 'kable' package:
+
+```{r tai, echo=FALSE}
+kbl(tabela1,caption = "Apartments in Wroclaw - prices in kPLN") %>%
+    kable_material(c("striped", "hover"))
+tab1<-classIntervals(apartments$price_PLN,n=10,style="fixed",fixedBreaks=seq(350000,1350000,by=100000))
+jenks.tests(tab1)
+```
+
+As we can see - the TAI index is quite high. 0.85 means that we can
+accept the proposed construction of the frequency table.
+
+## Basic plots
+
+In this section, we should represent our data using basic (pre-installed
+in R) graphics. Select the most appropriate graphs depending on the
+scale of the selected variables. Explore the heterogeneity of the
+distribution by presenting the data by group (e.g., by neighborhood,
+building type, etc.). Don't forget about main titles, labels and
+legends. Read more about graphical parameters
+[here](http://www.sthda.com/english/wiki/graphical-parameters).
+
+```{r histogram, echo=FALSE}
+hist(price_PLN, breaks="FD", col="green", probability = TRUE,
+     main="Prices in PLN - Wroclaw")
+lines(density(price_PLN[district=="Krzyki"]),col=2)
+lines(density(price_PLN[district=="Biskupin"]),col=3)
+lines(density(price_PLN[district=="Srodmiescie"]),col=4)
+legend("topright", legend=c("Krzyki", "Biskupin", "Srodmiescie"),
+       col=c(2,3,4), lty=1:2, horiz=FALSE, box.lty=0, cex=0.8)
+
+```
+
+Note that the `echo = FALSE` parameter has been added to the code
+snippet to prevent printing the R code that generated the graph.
+
+```{r boxplot, echo=FALSE}
+boxplot(price_PLN~district)
+```
+
+## ggplot2 plots
+
+Now, let's use the ***ggplot2*** and ***ggpubr*** libraries to plot.
+
+```{r histogram2, echo=FALSE}
+# Density plot of "price_PLN"
+#::::::::::::::::::::::::::::::::::::::
+density.p <- ggdensity(apartments, x = "price_PLN", 
+                       fill = "district", palette = "jco")+
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+# Draw the summary table of price_PLN
+#::::::::::::::::::::::::::::::::::::::
+# Compute descriptive statistics by groups
+stable <- desc_statby(apartments, measure.var = "price_PLN",
+                      grps = "district")
+stable <- stable[, c("district", "length", "mean", "sd")]
+# Summary table plot, medium orange theme
+stable.p <- ggtexttable(stable, rows = NULL, 
+                        theme = ttheme("mOrange"))
+# Draw text
+#::::::::::::::::::::::::::::::::::::::
+text <- paste("Price per apartment by 3 districts - Wroclaw.",
+              "Random sample of 200 apartments.",
+               sep = " ")
+text.p <- ggparagraph(text = text, face = "italic", size = 11, color = "black")
+# Arrange the plots on the same page
+ggarrange(density.p, stable.p, text.p, 
+          ncol = 1, nrow = 3,
+          heights = c(1, 0.5, 0.3))
+```
+
+Ggplot2 allows you to show the average value for each group using the
+**stat_summary()** function. You no longer need to calculate average
+values before creating a graph!
+
+```{r boxplot2, echo=FALSE}
+ggplot(apartments, aes(x=district, y=price_PLN)) +
+    geom_boxplot(alpha=0.7) +
+    stat_summary(fun="mean", geom="point", shape=20, size=5, color="red", fill="red") +
+ geom_jitter() +
+    facet_grid(~building_type) +
+    scale_fill_brewer(palette="Set1")
+
+```
+
+### RainCloud Plot
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+apartments %>% 
+  filter(rooms %in% c(1, 2, 3, 4)) %>% 
+  ggplot(aes(x = factor(rooms), y = price_PLN, fill = factor(rooms))) +
+  
+  # add half-violin from {ggdist} package
+  stat_halfeye(
+    # adjust bandwidth
+    adjust = 0.5,
+    # move to the right
+    justification = -0.2,
+    # remove the slub interval
+    .width = 0,
+    point_colour = NA
+  ) +
+  geom_boxplot(
+    width = 0.12,
+    # removing outliers
+    outlier.color = NA,
+    alpha = 0.5
+  ) +
+  stat_dots(
+    # ploting on left side
+    side = "left",
+    # adjusting position
+    justification = 1.1,
+    # adjust grouping (binning) of observations
+    binwidth = 0.25
+  ) +
+# Themes and Labels
+  labs(
+    title = "RainCloud Plot",
+    x = "No. of rooms",
+    y = "Prices in PLN",
+    fill = "rooms"
+  ) +
+  coord_flip()
+```
+
+### Faceting
+
+Faceting generates small multiples, each showing a different subset of
+the data. They are a powerful tool for exploratory data analysis: you
+can quickly compare patterns in different parts of the data and see if
+they are the same or different. Read more
+[here](https://ggplot2-book.org/facet.html).
+
+```{r facet1, echo=FALSE}
+plot1 <- ggplot(apartments, aes(price_PLN, rooms)) + 
+  geom_abline() +
+  geom_jitter(width = 0.1, height = 0.1) 
+plot1 + facet_wrap(~district)
+```
+
+## Univariate Statistics
+
+Before automatically reporting the full summary table of descriptive
+statistics, this time your goal is to measure the central tendency of
+the price distribution. Compare the mean, median, and mode along with
+positional measures - quantiles - by district and building type or
+number of rooms in the apartment.
+
+```{r}
+    mean(price_PLN)
+    median(price_PLN)
+    sd(price_PLN) #standard deviation
+    var(price_PLN) #variance
+    coeff_var<-sd(price_PLN)/mean(price_PLN) #coefficient of variability %
+    coeff_var
+    IQR(price_PLN)# difference between quartiles =Q3-Q1 
+    sx<-IQR(price_PLN)/2  #interquartile deviation
+    coeff_varx<-sx/median(price_PLN) #IQR coefficient of variability %
+    coeff_varx
+    min(price_PLN)
+    max(price_PLN)
+    quantile(price_PLN,probs=c(0,0.1,0.25,0.5,0.75,0.95,1),na.rm=TRUE)
+```
+
+Ok, we have calculated all of the basic summary statistics above. Let's
+wrap them up together now.
+
+```{r kable_report, echo=FALSE}
+apartments_list <- split(apartments$price_PLN, apartments$rooms)
+inline_plot <- data.frame(rooms = c(1, 2, 3, 4), boxplot = "", histogram = "",
+                          line1 = "", line2 = "", points1 = "")
+inline_plot %>%
+  kbl(booktabs = TRUE) %>%
+  kable_paper(full_width = FALSE) %>%
+  column_spec(2, image = spec_boxplot(apartments_list)) %>%
+  column_spec(3, image = spec_hist(apartments_list)) %>%
+  column_spec(4, image = spec_plot(apartments_list, same_lim = TRUE)) %>%
+  column_spec(5, image = spec_plot(apartments_list, same_lim = FALSE)) %>%
+  column_spec(6, image = spec_plot(apartments_list, type = "p"))
+
+```
+
+### Summary tables
+
+Ok, now we will finally summarize the basic measures of central tendency
+for prices by district/building type using the '***kable***' package.
+Feel free to customize your final report. See some hints
+[here](https://cran.r-project.org/web/packages/qwraps2/vignettes/summary-statistics.html).
+
+```{r kable_report2, echo=FALSE, message=FALSE, warning=FALSE}
+raport <-
+  list("Price in PLN" =
+       list("Min"       = ~ min(price_PLN),
+            "Max"       = ~ max(price_PLN),
+            "Q1"        = ~ quantile(price_PLN,0.25),
+            "Median" = ~ round(median(price_PLN),2),
+            "Q3"        = ~ quantile(price_PLN,0.75),
+            "Mean" = ~ round(mean(price_PLN),2),
+            "Sd" = ~ round(sd(price_PLN),2),
+             "IQR" = ~ round(iqr(price_PLN),2),
+            "Sx" = ~ round(iqr(price_PLN)/2,2),
+            "Var %" = ~ round((sd(price_PLN)/mean(price_PLN)),2),
+            "IQR Var %" = ~ round((iqr(price_PLN)/median(price_PLN)),2),
+            "Skewness" = ~  round(skew(price_PLN),2),
+             "Kurtosis" = ~  round(kurtosi(price_PLN),2)
+            ))
+tabela<-summary_table(apartments, summaries = raport, by = c("rooms"))
+
+kbl(tabela,  digits = 2,
+  caption="Table 1. Apartments in Wroclaw - prices in PLN by number of rooms.",  col.names = c('1 room', '2 rooms', '3 rooms', '4 rooms')) %>% kable_classic(full_width = F, html_font = "Cambria")%>% kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### gtsummary
+
+We can calculate easily descriptive statistics also using gtsummary
+package:
+
+```{r}
+apartments %>%
+  select(price_PLN,rooms) %>%
+  tbl_summary(label= price_PLN ~ "Price",digits=c(price_PLN)~2,by=rooms,type = all_continuous() ~ "continuous2", statistic = all_continuous() ~ c("{N_nonmiss}", "{median} ({p25}, {p75})", "{min}, {max}"),missing = "no")
+```
+
+### dfSummary
+
+dfSummary() creates a summary table with statistics, frequencies and
+graphs for all variables in a data frame. The information displayed is
+type-specific (character, factor, numeric, date) and also varies
+according to the number of distinct values.
+
+When using dfSummary() in R Markdown documents, it is generally a good
+idea to exclude a column or two to avoid margin overflow. Since the
+Valid and Missing columns are redundant, we can drop either one of them.
+
+```{r warning=FALSE, results="asis"}
+dfSummary(apartments,
+          plain.ascii  = FALSE, 
+          style        = "grid", 
+          graph.magnif = 0.75, 
+          valid.col    = FALSE,
+          tmp.img.dir  = "/tmp")
+```
+
+To produce optimal results, summarytools has its own version of the base
+by() function. It's called stby(), and we use it exactly as we would
+by():
+
+```{r results="asis", warning=FALSE}
+(stats_by_rooms <- stby(data      = apartments, INDICES   = apartments$rooms, FUN       = descr, stats     = "common", transpose = TRUE))
+```
+
+### Tidy Tables
+
+When generating freq() or descr() tables, it is possible to turn the
+results into "tidy" tables with the use of the tb() function (think of
+tb as a diminutive for tibble). For example:
+
+```{r}
+apartments %>%
+  descr(stats = "common") %>%
+  tb()
+```
+
+Here are some examples showing how lists created using stby() or
+group_by() can be transformed into tidy tibbles.
+
+```{r}
+grouped_descr <- stby(data    = apartments,INDICES = apartments$rooms, FUN     = descr, stats   = "common")
+
+grouped_descr %>% tb()
+```
+
+### A Bridge to Other Packages
+
+```{r}
+stby(data    = apartments, 
+     INDICES = apartments$rooms, 
+     FUN     = descr, 
+     stats   = "fivenum") %>%
+  tb(order = 3) %>%
+  kable(format = "html", digits = 2) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+## Your turn!
+
+Your task this week is to: prepare your own descriptive analysis for the
+"CreditCard" dataset (AER package). It is a cross-sectional dataframe on
+the credit history for a sample of applicants for a type of credit card.
+
+```{r include=FALSE}
+data(CreditCard)
+#?CreditCard  read description first
+```
+
+Are the yearly incomes (in USD 10,000), credit card expenditures, age,
+ratio of monthly credit card expenditure to yearly income -
+significantly different for applicants for customers with different
+credit risk ("card" variable - factor)?
+
+Prepare a professional data visualizations, descriptive statistics'
+tables and interpret them.
+
+```{r my_summary_table}
+# your code here
+```
