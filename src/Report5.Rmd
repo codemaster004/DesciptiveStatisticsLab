@@ -1,0 +1,189 @@
+---
+title: "Regression Analysis"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+download.file("https://github.com/kflisikowski/ds/blob/master/Real%20estate.csv?raw=true", destfile ="real_estates.csv",mode="wb")
+```
+
+## Introduction
+
+Our aim is to predict house values. Before we begin to do any analysis, we should always check whether the dataset has missing value or not, we do so by typing:
+
+```{r dataset, warning=FALSE}
+taiwan_real_estate <- read.csv("real_estates.csv",row.names=1)
+attach(taiwan_real_estate)
+any(is.na(taiwan_real_estate))
+```
+
+
+Let's take a look at structure of the data set:
+
+```{r dataset2, warning=TRUE}
+glimpse(taiwan_real_estate)
+```
+
+Let's simplify variables' names:
+
+```{r}
+taiwan_real_estate <- taiwan_real_estate %>%
+rename(house_age_years = house.age, price_twd_msq = house.price.of.unit.area,
+       n_convenience = number.of.convenience.stores, 
+       dist_to_mrt_m = distance.to.the.nearest.MRT.station)
+```
+
+We can also perform binning for "house_age_years":
+
+```{r}
+#perform binning with specific number of bins
+taiwan_real_estate<-taiwan_real_estate %>% mutate(house_age_cat = cut(house_age_years, breaks=c(0,15,30,45),include.lowest = T,
+                                                                        right = F))
+```
+
+## Descriptive Statistics
+
+Prepare a heatmap with correlation coefficients on it:
+
+```{r}
+cor(taiwan_real_estate$house_age_years, taiwan_real_estate$price_twd_msq)
+cor(taiwan_real_estate$dist_to_mrt_m, taiwan_real_estate$price_twd_msq)
+cor(taiwan_real_estate$n_convenience, taiwan_real_estate$price_twd_msq)
+cor(taiwan_real_estate$latitude, taiwan_real_estate$price_twd_msq)
+cor(taiwan_real_estate$longitude, taiwan_real_estate$price_twd_msq)
+
+library(corrplot)
+M = cor(taiwan_real_estate[,1:6])
+corrplot(M, method='number')
+```
+
+
+Draw a scatter plot of n_convenience vs. price_twd_msq:
+
+```{r}
+ggplot(data=taiwan_real_estate, aes(x=dist_to_mrt_m, y=price_twd_msq)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+Draw a scatter plot of house_age_years vs. price_twd_msq:
+
+```{r}
+ggplot(data=taiwan_real_estate, aes(x=house_age_years, y=price_twd_msq)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+Draw a scatter plot of distance to nearest MRT station vs. price_twd_msq:
+
+```{r}
+ggplot(data=taiwan_real_estate, aes(x=dist_to_mrt_m, y=price_twd_msq)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+Plot a histogram of price_twd_msq with 10 bins, facet the plot so each house age group gets its own panel:
+
+```{r}
+ggplot(taiwan_real_estate, aes(price_twd_msq)) +
+  geom_histogram(bins=10)
+```
+
+
+Looking at outliers for price
+```{r}
+ggplot(taiwan_real_estate, aes(price_twd_msq)) +
+  geom_boxplot()
+
+```
+
+Summarize to calculate the mean, sd, median etc. house price/area by house age:
+
+```{r}
+taiwan_real_estate %>% 
+  group_by(house_age_cat) %>% 
+  summarise(mean=mean(price_twd_msq), median=median(price_twd_msq), n=n())
+```
+
+## Simple model
+
+Run a linear regression of price_twd_msq vs. best, but only 1 predictor:
+
+```{r}
+model1 = lm(data=taiwan_real_estate, formula=price_twd_msq~dist_to_mrt_m)
+model1
+```
+
+We start by displaying the statistical summary of the model using the R function summary():
+
+```{r}
+summary(model1)
+```
+
+
+You can access lots of different aspects of the regression object. To see what’s inside, use names():
+
+```{r}
+
+```
+
+What do they mean?
+
+
+
+
+
+Discuss model accuracy:
+
+
+
+Model diagnostics:
+
+```{r}
+par(mfrow = c(2, 2))
+plot(mdl_price_vs_age) # ?your name of the model
+```
+
+The four plots show...
+
+
+Create the diagnostic plots using ggfortify:
+
+```{r}
+library(ggfortify)
+autoplot(model_lm1) # ?your name of the model
+```
+
+Outliers and high levarage points:
+
+```{r}
+plot(model_lm1, 5)  # ?your name of the model
+```
+
+
+Influential values:
+
+```{r}
+# Cook's distance
+plot(model_lm1, 4) # ?your name of the model
+```
+
+or just plot all of diagnostic plots together:
+
+```{r}
+autoplot(model_lm1, which = 1:6, label.size = 3) # ?your name of the model
+```
+
+
+Discussion:
+
+
+
+## Multiple Regression Model
+
+to be continued next week...
+
